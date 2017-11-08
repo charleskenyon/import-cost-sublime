@@ -1,0 +1,7 @@
+A stream is an abstract interface for working with streaming data within Node.js.
+
+A duplex stream is a stream which is both readable and writable.
+
+Standard streams within computer programming are preconnected input and output communication channels between a program and its environment. Three I/O connections are standard input (stdin), standard output (stdout), and standard error (stderr).
+
+Unix sockets (a duplex stream within Node.js) are biderectional sockets that exist in the domain of the local host and cannot be accessed over a network (exist on same host operating system).
