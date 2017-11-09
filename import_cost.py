@@ -23,8 +23,8 @@ class ImportCostCommand(sublime_plugin.TextCommand):
 
 class EventEditor(sublime_plugin.EventListener):
 
-    def on_new_async(self, view):
-    	npm_install(view, DIR_PATH)
+  def on_new_async(self, view):
+    npm_install(view, DIR_PATH)
 
 
 # ImportCostCommand(sublime_plugin.TextCommand) --> view.run_command(import_cost)system

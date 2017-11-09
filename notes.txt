@@ -1,3 +1,7 @@
+Streams are collections of data that may not be available all at once/that become available over a period of time. 
+
+Streaming data as oppose to loading it asynchronously can prevent memory consumption problems. This is due to data being piped one chunk at a time as oppose to it being stored in memory as one huge chunk. Some files can't be served by means other than a stream in Node as it has a default buffer limit (how much data can be stored in memory).
+
 A stream is an abstract interface for working with streaming data within Node.js.
 
 A duplex stream is a stream which is both readable and writable.
@@ -5,3 +9,11 @@ A duplex stream is a stream which is both readable and writable.
 Standard streams within computer programming are preconnected input and output communication channels between a program and its environment. Three I/O connections are standard input (stdin), standard output (stdout), and standard error (stderr).
 
 Unix sockets (a duplex stream within Node.js) are biderectional sockets that exist in the domain of the local host and cannot be accessed over a network (exist on same host operating system).
+
+process.stderr is a Writable stream
+process.stdin is a Readable stream
+process.stdout is a Writable stream
+
+All of these objects inherit from the net.Socket object and therefore are classified as an instance of Stream.Duplex despite this not being the case.
+
+Pushing the null object to a Readable stream in Node indicates that the stream does not have any more data.

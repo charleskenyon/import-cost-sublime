@@ -1,12 +1,14 @@
 const { importCost, cleanup, JAVASCRIPT } = require('import-cost');
 
-getStdin().then(function(data) {
-  const { file_string: fileString, file_path: filePath } = JSON.parse(data);
-  // const emitter = importCost(filePath, fileString, JAVASCRIPT);
-  process.stdout.write(JSON.stringify(filePath));
-}).catch(function(err) {
-  process.stderr.write(err.message);
-});
+getStdin()
+  .then(data => {
+    const { file_string: fileString, file_path: filePath } = JSON.parse(data);
+    const emitter = importCost(filePath, fileString, JAVASCRIPT);
+    emitter.on('error', e => process.stdout.write(JSON.stringify(e)));
+    emitter.on('done', packages => process.stdout.write(JSON.stringify(packages)));
+    // process.stdout.write(JSON.stringify(filePath));
+  })
+  .catch(err => process.stderr.write(err.message));
 
 // (async () => {
 //   try {
