@@ -5,20 +5,19 @@ from .src.utils import node_bridge, npm_install
 DIR_PATH = os.path.dirname(os.path.realpath(__file__))
 
 
-class ImportCostWrite(threading.Thread):
+class ImportCostExec(threading.Thread):
 
-	def __init__(self, edit, view):
-		self.edit = edit
+	def __init__(self, view):
 		self.view = view
-		self.write_to_file(self.edit, self.view)
+		threading.Thread.__init__(self)
 
-	def write_to_file(self, edit, view):
+	def run(self):
 		region = sublime.Region(0, self.view.size())
-		file_string = view.substr(region)
-		file_path = view.file_name()
+		file_string = self.view.substr(region)
+		file_path = self.view.file_name()
 		json_data = json.dumps({'file_string': file_string, 'file_path': file_path})
 		node_output = self.open_node_socket(json_data)
-		view.replace(edit, region, node_output)
+		self.view.run_command('write_output', {'output': node_output})
 
 	def open_node_socket(self, data):
 		try:
@@ -28,16 +27,25 @@ class ImportCostWrite(threading.Thread):
 			sublime.error_message('import-cost\n%s' % error)
 
 
+class WriteOutputCommand(sublime_plugin.TextCommand):
+
+	def run(self, edit, output):
+		region = sublime.Region(0, self.view.size())
+		self.view.replace(edit, region, output)
+
+
 class ImportCostCommand(sublime_plugin.TextCommand):
 
 	def run(self, edit):
-		ImportCostWrite(edit, self.view)
+		ImportCostExec(self.view).start()
 
-
+		
 class EventEditor(sublime_plugin.EventListener):
 
   def on_new_async(self, view):
     npm_install(view, DIR_PATH)
+
+    # view.run_command('import_cost')
 
 
 # ImportCostCommand(sublime_plugin.TextCommand) --> view.run_command(import_cost)system
