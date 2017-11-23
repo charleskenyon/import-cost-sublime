@@ -1,9 +1,8 @@
-import sublime, sublime_plugin, threading
-import subprocess, json, os
+import sublime, sublime_plugin
+import threading, subprocess, json, os, functools
 from .src.utils import node_bridge, npm_install
 
 DIR_PATH = os.path.dirname(os.path.realpath(__file__))
-
 
 class ImportCostExec(threading.Thread):
 
@@ -31,7 +30,8 @@ class WriteOutputCommand(sublime_plugin.TextCommand):
 
 	def run(self, edit, output):
 		region = sublime.Region(0, self.view.size())
-		self.view.replace(edit, region, output)
+		print(output)
+		# self.view.replace(edit, region, output)
 
 
 class ImportCostCommand(sublime_plugin.TextCommand):
@@ -42,8 +42,19 @@ class ImportCostCommand(sublime_plugin.TextCommand):
 		
 class EventEditor(sublime_plugin.EventListener):
 
-  def on_new_async(self, view):
-    npm_install(view, DIR_PATH)
+	pending = 0
+
+	def handle_timeout(self, view):
+		self.pending = self.pending - 1
+		if self.pending == 0:
+			view.run_command('import_cost')
+
+	def on_modified(self, view):
+		self.pending = self.pending + 1
+		sublime.set_timeout(functools.partial(self.handle_timeout, view), 1000)
+
+	def on_new_async(self, view):
+		npm_install(view, DIR_PATH)
 
     # view.run_command('import_cost')
 
