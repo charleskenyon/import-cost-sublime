@@ -1,43 +1,57 @@
+const _ = require('ramda');
+const Rx = require('rxjs/Rx');
+Rx.Node = require('rx-node');
+const Maybe = require('data.maybe');
 const { importCost, cleanup, JAVASCRIPT } = require('import-cost');
 
-getStdin()
-  .then(data => {
-    const { file_string: fileString, file_path: filePath } = JSON.parse(data);
-    const emitter = importCost(filePath, fileString, JAVASCRIPT);
+const verifyImportChange = _.compose(
+  _.not,
+  _.apply(_.equals),
+  _.map(
+    _.compose(
+      x => x.getOrElse(null),
+      _.map(
+        _.compose(
+          _.filter(_.test(/\bimport\s|\brequire\(/)),
+          _.addIndex(_.map)((v, i) => v + i),
+          _.split('\n'),
+          _.prop('file_string')
+        )
+      ),
+      Maybe.fromNullable
+    )
+  )
+);
 
-    emitter.on('error', e => console.log(e));
-
-    emitter.on('done', packages => {
-      process.stdout.write(JSON.stringify(packages))
-      cleanup();
-    });
-    
-  })
-  .catch(err => process.stderr.write(err.message));
-
-// (async () => {
-//   try {
-
-//     var data = await getStdin();
-//     process.stdout.write(data);
-
-//   } catch(error) {
-//     process.stderr.write(err.message);
-//   }
-
-// })();
+Rx.Observable.fromPromise(getStdin())
+  .map(JSON.parse)
+  .startWith(null)
+  .pairwise()
+  .filter(verifyImportChange)
+  .pluck(1)
+  .switchMap(mapImportCost)
+  .do(_ => cleanup())
+  .map(JSON.stringify)
+  .subscribe(
+    output => process.stdout.write(output),
+    err => process.exit()
+  );
 
 function getStdin() {
-	let chunk, data = '';
+  let chunk, data = '';
   return new Promise((resolve, reject) => {
     process.stdin.setEncoding('utf8');
     process.stdin.on('readable', () => {
       if ((chunk = process.stdin.read())) data += chunk;
     });
     process.stdin.on('end', () => {
-  		resolve(data);
-  	});
+      resolve(data);
+    });
   });
 }
 
-// observable
+function mapImportCost(data) {
+  return Rx.Observable.fromEvent(
+    importCost(data.file_name, data.file_string, JAVASCRIPT)
+  , 'done');
+}

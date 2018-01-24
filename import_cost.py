@@ -4,6 +4,7 @@ from .src.utils import node_bridge, npm_install
 
 DIR_PATH = os.path.dirname(os.path.realpath(__file__))
 
+
 class ImportCostExec(threading.Thread):
 
 	def __init__(self, view):
@@ -16,7 +17,8 @@ class ImportCostExec(threading.Thread):
 		file_path = self.view.file_name()
 		json_data = json.dumps({'file_string': file_string, 'file_path': file_path})
 		node_output = self.open_node_socket(json_data)
-		self.view.run_command('write_output', {'output': node_output})
+		if node_output:
+			self.view.run_command('write_output', {'output': node_output})
 
 	def open_node_socket(self, data):
 		try:
@@ -31,7 +33,13 @@ class WriteOutputCommand(sublime_plugin.TextCommand):
 	def run(self, edit, output):
 		region = sublime.Region(0, self.view.size())
 		print(output)
+		print(sublime.Region(1))
+		self.view.erase_phantoms("test")
+		# self.view.add_phantom("test", sublime.Region(self.view.line(3)), "Hello, World!", sublime.LAYOUT_BLOCK)
 		# self.view.replace(edit, region, output)
+
+		# line = self.view.line(module["region"].a)
+		# sublime.Region(self.view.line(3))
 
 
 class ImportCostCommand(sublime_plugin.TextCommand):
