@@ -16,4 +16,10 @@ process.stdout is a Writable stream
 
 All of these objects inherit from the net.Socket object and therefore are classified as an instance of Stream.Duplex despite this not being the case.
 
-Pushing the null object to a Readable stream in Node indicates that the stream does not have any more data.
+Pushing a null value to a Readable stream in Node indicates that the stream does not have any more data.
+
+A Node.js Buffer is class which is designed to handle raw binary data (chunks of memory) that is in the process of being moved from one place to another (e.g via a stream)
+
+ASCII is a charecter encoding maps the numbers 0-127 to characters. Unicode is a superset for ASCII which allows the protocol to be expanded to support characters from other languages.
+
+Utf-8 is an encoding that is used to transform an idea (e.g the letter A is ASCII character encoding) into raw data.

@@ -23,35 +23,26 @@ const verifyImportChange = _.compose(
   )
 );
 
-Rx.Observable.fromPromise(getStdin())
+const importCostStream = (data) => {
+  return Rx.Observable.fromEvent(
+    importCost(data['file_path'], data['file_string'], JAVASCRIPT)
+  , 'done');
+}
+
+Rx.Node.fromReadableStream(process.stdin, 'data')
   .map(JSON.parse)
   .startWith(null)
   .pairwise()
-  .filter(verifyImportChange)
-  .pluck(1)
-  .switchMap(mapImportCost)
-  .do(_ => cleanup())
+  // .filter(verifyImportChange)
+  // .pluck(1)
+  // .switchMap(importCostStream)
+  // .do(_ => cleanup())
   .map(JSON.stringify)
   .subscribe(
     output => process.stdout.write(output),
     err => process.exit()
   );
 
-function getStdin() {
-  let chunk, data = '';
-  return new Promise((resolve, reject) => {
-    process.stdin.setEncoding('utf8');
-    process.stdin.on('readable', () => {
-      if ((chunk = process.stdin.read())) data += chunk;
-    });
-    process.stdin.on('end', () => {
-      resolve(data);
-    });
-  });
-}
+  // /Users/bmck/Library/Application Support/Sublime Text 3/Packages/import-cost-sublime
 
-function mapImportCost(data) {
-  return Rx.Observable.fromEvent(
-    importCost(data.file_name, data.file_string, JAVASCRIPT)
-  , 'done');
-}
+  // process.stdin.resume();

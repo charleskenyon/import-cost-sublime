@@ -1,6 +1,6 @@
 import sublime, sublime_plugin
 import threading, subprocess, json, os, functools
-from .src.utils import node_bridge, npm_install
+from .utils import node_bridge, npm_install
 
 DIR_PATH = os.path.dirname(os.path.realpath(__file__))
 
@@ -22,7 +22,7 @@ class ImportCostExec(threading.Thread):
 
 	def open_node_socket(self, data):
 		try:
-			node_path = os.path.join(sublime.packages_path(), DIR_PATH, 'process.js')
+			node_path = os.path.join(sublime.packages_path(), DIR_PATH, 'import-cost.js')
 			return node_bridge(data, node_path)
 		except Exception as error:
 			sublime.error_message('import-cost\n%s' % error)
@@ -35,7 +35,7 @@ class WriteOutputCommand(sublime_plugin.TextCommand):
 		print(output)
 		print(sublime.Region(1))
 		self.view.erase_phantoms("test")
-		# self.view.add_phantom("test", sublime.Region(self.view.line(3)), "Hello, World!", sublime.LAYOUT_BLOCK)
+		# self.view.add_phantom("test", sublime.Region(self.view.line(3)), "Hello, World!", sublime.LAYOUT_INLINE)
 		# self.view.replace(edit, region, output)
 
 		# line = self.view.line(module["region"].a)
@@ -58,13 +58,17 @@ class EventEditor(sublime_plugin.EventListener):
 			view.run_command('import_cost')
 
 	def on_modified(self, view):
-		self.pending = self.pending + 1
-		sublime.set_timeout(functools.partial(self.handle_timeout, view), 1000)
+		file_extension = os.path.splitext(view.file_name())[1]
+		if file_extension in ['.js', '.jsx']:
+			self.pending = self.pending + 1
+			sublime.set_timeout(functools.partial(self.handle_timeout, view), 1000)
 
 	def on_new_async(self, view):
 		npm_install(view, DIR_PATH)
 
     # view.run_command('import_cost')
+
+  # on switch view terminate p process.
 
 
 # ImportCostCommand(sublime_plugin.TextCommand) --> view.run_command(import_cost)system
