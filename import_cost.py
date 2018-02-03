@@ -3,6 +3,28 @@ import threading, subprocess, json, os, functools
 from .utils import node_socket, npm_install
 
 DIR_PATH = os.path.dirname(os.path.realpath(__file__))
+NODE_SOCKET = NodeSocket()
+
+
+class NodeSocket():
+
+	def __init__(self):
+		self.proc = self.open_node_socket()
+
+	def open_node_socket(self):
+		try:
+			node_path = os.path.join(sublime.packages_path(), DIR_PATH, 'import-cost.js')
+			return node_socket(node_path)
+		except Exception as error:
+			sublime.error_message('import-cost\n%s' % error)
+
+	def get_proc(self):
+		if self.proc.poll() is not None:
+			self.proc = self.open_node_socket()
+		return self.proc
+
+	def terminate_proc(self):
+		self.proc.terminate()
 
 
 class ImportCostExec(threading.Thread):
@@ -11,17 +33,15 @@ class ImportCostExec(threading.Thread):
 		self.view = view
 		self.proc = self.open_node_socket()
 		threading.Thread.__init__(self)
-		print('init')
 
 	def run(self):
 		region = sublime.Region(0, self.view.size())
 		file_string = self.view.substr(region)
 		file_path = self.view.file_name()
 		json_data = json.dumps({'file_string': file_string, 'file_path': file_path}) + '\n'
-		if self.proc.poll() is not None:
-			self.proc = self.open_node_socket()
-		self.proc.stdin.write(json_data)
-		node_output = self.proc.stdout.readline()[:-1]
+		proc = NODE_SOCKET.get_proc()
+		proc.stdin.write(json_data)
+		node_output = proc.stdout.readline()[:-1]
 		if node_output:
 			self.view.run_command('write_output', {'output': node_output})
 
@@ -70,6 +90,9 @@ class EventEditor(sublime_plugin.EventListener):
 
 	def on_new_async(self, view):
 		npm_install(view, DIR_PATH) # sublime message when complete
+
+	def on_deactivated(self, view):
+		NODE_SOCKET.terminate_proc()
 
     # view.run_command('import_cost')
 

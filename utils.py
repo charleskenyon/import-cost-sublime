@@ -37,6 +37,7 @@ def npm_install(view, path):
 		try:
 			command = ["npm", "install"]
 			process = subprocess.Popen(command, stdout=subprocess.PIPE)
-			out, err = process.communicate()
+			process.communicate()
+			# out, err = process.communicate()
 		except OSError:
-			raise Exception('Couldn\'t find npm. Make sure it\'s in your $PATH by running `npm -v` in your command-line.')
+			raise Exception('Couldn\'t find Npm. Make sure it\'s in your $PATH by running `npm -v` in your command-line.')

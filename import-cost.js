@@ -27,8 +27,8 @@ Rx.Observable.fromEvent(process.stdin, 'readable', () => process.stdin.read())
   .map(JSON.parse)
   .startWith(null)
   .pairwise()
-  // .mergeMap(importChangeStream)
-  .map(v => v + '\n')
+  .mergeMap(importChangeStream)
+  // .map(v => v + '\n')
   .subscribe(
     output => process.stdout.write(output),
     err => process.exit() // need error handling
