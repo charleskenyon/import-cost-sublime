@@ -1,6 +1,6 @@
 import sublime, sublime_plugin
 import threading, subprocess, json, os, functools
-from .utils import node_bridge, npm_install
+from .utils import node_socket, npm_install
 
 DIR_PATH = os.path.dirname(os.path.realpath(__file__))
 
@@ -9,21 +9,26 @@ class ImportCostExec(threading.Thread):
 
 	def __init__(self, view):
 		self.view = view
+		self.proc = self.open_node_socket()
 		threading.Thread.__init__(self)
+		print('init')
 
 	def run(self):
 		region = sublime.Region(0, self.view.size())
 		file_string = self.view.substr(region)
 		file_path = self.view.file_name()
-		json_data = json.dumps({'file_string': file_string, 'file_path': file_path})
-		node_output = self.open_node_socket(json_data)
+		json_data = json.dumps({'file_string': file_string, 'file_path': file_path}) + '\n'
+		if self.proc.poll() is not None:
+			self.proc = self.open_node_socket()
+		self.proc.stdin.write(json_data)
+		node_output = self.proc.stdout.readline()[:-1]
 		if node_output:
 			self.view.run_command('write_output', {'output': node_output})
 
-	def open_node_socket(self, data):
+	def open_node_socket(self):
 		try:
 			node_path = os.path.join(sublime.packages_path(), DIR_PATH, 'import-cost.js')
-			return node_bridge(data, node_path)
+			return node_socket(node_path)
 		except Exception as error:
 			sublime.error_message('import-cost\n%s' % error)
 
@@ -61,14 +66,14 @@ class EventEditor(sublime_plugin.EventListener):
 		file_extension = os.path.splitext(view.file_name())[1]
 		if file_extension in ['.js', '.jsx']:
 			self.pending = self.pending + 1
-			sublime.set_timeout(functools.partial(self.handle_timeout, view), 1000)
+			sublime.set_timeout(functools.partial(self.handle_timeout, view), 1500)
 
 	def on_new_async(self, view):
-		npm_install(view, DIR_PATH)
+		npm_install(view, DIR_PATH) # sublime message when complete
 
     # view.run_command('import_cost')
 
-  # on switch view terminate p process.
+  # on switch view remove phantom set
 
 
 # ImportCostCommand(sublime_plugin.TextCommand) --> view.run_command(import_cost)system
