@@ -55,16 +55,32 @@ class ImportCostExec(threading.Thread):
 
 class WriteOutputCommand(sublime_plugin.TextCommand):
 
+	def __init__(self, view):
+		self.view = view
+		self.phantom_set = sublime.PhantomSet(view, 'import_cost')
+
 	def run(self, edit, output):
 		region = sublime.Region(0, self.view.size())
-		print(output)
-		print(sublime.Region(1))
-		self.view.erase_phantoms("test")
-		# self.view.add_phantom("test", sublime.Region(self.view.line(3)), "Hello, World!", sublime.LAYOUT_INLINE)
-		# self.view.replace(edit, region, output)
+		print(json.loads(output))
 
-		# line = self.view.line(module["region"].a)
-		# sublime.Region(self.view.line(3))
+		for x in json.loads(output):
+			print(type(x['html']))
+		
+
+		# phantom_set = sublime.PhantomSet(self.view, 'import_cost')
+		phantoms = [sublime.Phantom(self.get_region(int(x['line'])), x['html'], sublime.LAYOUT_INLINE) for x in json.loads(output)]
+		print(phantoms)
+		self.phantom_set.update(phantoms)
+		
+
+		# self.view.erase_phantoms("test")
+		# region = self.get_region(3)
+		# self.view.add_phantom("test", region, '<span style="color: #FF0000; padding-left: 15px;">Hello world</span>', sublime.LAYOUT_INLINE)
+
+	def get_region(self, line):
+		a = self.view.text_point(line, 0)
+		return sublime.Region(a - 1)
+
 
 
 class ImportCostCommand(sublime_plugin.TextCommand):

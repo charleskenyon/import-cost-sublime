@@ -22,6 +22,21 @@ const verifyImportChange = _.compose(
   )
 );
 
+const parsePackagesData = _.compose(
+  _.map(
+    obj => {
+      const parseKb = v => (v / 1000).toFixed(1) + 'kB';
+      const text = `${parseKb(obj.size)}, gzip ${parseKb(obj.gzip)}`;
+      const styles = `style="color: #C0C0C0; padding-left: 15px;"`;
+      return Object.assign({}, {
+        line: obj.line,
+        html: `<span ${styles}>${text}</span>`
+      });
+    }
+  ),
+  _.filter(v => v.size !== 0)
+)
+
 Rx.Observable.fromEvent(process.stdin, 'readable', () => process.stdin.read())
   .map(v => v.toString('ascii'))
   .map(JSON.parse)
@@ -43,6 +58,7 @@ function continueStream(data) {
     .pluck(1)
     .switchMap(importCostStream) // use switchMap
     .do(_ => cleanup())
+    .map(parsePackagesData)
     .map(JSON.stringify)
     .map(v => v + '\n')
 }
