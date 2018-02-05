@@ -31,7 +31,6 @@ class ImportCostExec(threading.Thread):
 
 	def __init__(self, view):
 		self.view = view
-		self.proc = self.open_node_socket()
 		threading.Thread.__init__(self)
 
 	def run(self):
@@ -44,13 +43,6 @@ class ImportCostExec(threading.Thread):
 		node_output = proc.stdout.readline()[:-1]
 		if node_output:
 			self.view.run_command('write_output', {'output': node_output})
-
-	def open_node_socket(self):
-		try:
-			node_path = os.path.join(sublime.packages_path(), DIR_PATH, 'import-cost.js')
-			return node_socket(node_path)
-		except Exception as error:
-			sublime.error_message('import-cost\n%s' % error)
 
 
 class WriteOutputCommand(sublime_plugin.TextCommand):
@@ -68,18 +60,21 @@ class WriteOutputCommand(sublime_plugin.TextCommand):
 		
 
 		# phantom_set = sublime.PhantomSet(self.view, 'import_cost')
-		phantoms = [sublime.Phantom(self.get_region(int(x['line'])), x['html'], sublime.LAYOUT_INLINE) for x in json.loads(output)]
+		phantoms = [sublime.Phantom(self.get_region(x['line']), x['html'], sublime.LAYOUT_INLINE) for x in json.loads(output)]
 		print(phantoms)
+		self.view.erase_phantoms('import_cost')
 		self.phantom_set.update(phantoms)
 		
 
-		# self.view.erase_phantoms("test")
+		self.view.erase_phantoms("test")
 		# region = self.get_region(3)
 		# self.view.add_phantom("test", region, '<span style="color: #FF0000; padding-left: 15px;">Hello world</span>', sublime.LAYOUT_INLINE)
 
 	def get_region(self, line):
 		a = self.view.text_point(line, 0)
 		return sublime.Region(a - 1)
+
+		# add blank region to right of import
 
 
 
@@ -108,11 +103,12 @@ class EventEditor(sublime_plugin.EventListener):
 		npm_install(view, DIR_PATH) # sublime message when complete
 
 	def on_deactivated(self, view):
-		NODE_SOCKET.terminate_proc()
+		view.erase_phantoms('import_cost')
+		# NODE_SOCKET.terminate_proc()
 
-    # view.run_command('import_cost')
+		# view.run_command('import_cost')
 
-  # on switch view remove phantom set
+	# on switch view remove phantom set
 
 
 # ImportCostCommand(sublime_plugin.TextCommand) --> view.run_command(import_cost)system
@@ -126,3 +122,6 @@ class EventEditor(sublime_plugin.EventListener):
 # http://horsed.github.io/articles/sublime-build-system-for-npm-install/
 
 # installing npm modules... /-------/ node/npm not installed - please install node to use this plugin
+
+# [forkpty: Resource temporarily unavailable]
+# [Could not create a new process and open a pseudo-tty.]
