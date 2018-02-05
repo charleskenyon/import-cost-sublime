@@ -3,7 +3,12 @@ import threading, subprocess, json, os, functools
 from .utils import node_socket, npm_install
 
 DIR_PATH = os.path.dirname(os.path.realpath(__file__))
-NODE_SOCKET = NodeSocket()
+NODE_SOCKET = None 
+
+
+def plugin_loaded():
+	global NODE_SOCKET
+	NODE_SOCKET = NodeSocket()
 
 
 class NodeSocket():
@@ -56,11 +61,13 @@ class WriteOutputCommand(sublime_plugin.TextCommand):
 		print(json.loads(output))
 
 		for x in json.loads(output):
-			print(type(x['html']))
+			print(x['html'])
 		
+		phantoms = [
+			sublime.Phantom(self.get_region(x['line']), x['html'], sublime.LAYOUT_INLINE)
+			for x in json.loads(output)
+		]
 
-		# phantom_set = sublime.PhantomSet(self.view, 'import_cost')
-		phantoms = [sublime.Phantom(self.get_region(x['line']), x['html'], sublime.LAYOUT_INLINE) for x in json.loads(output)]
 		print(phantoms)
 		self.view.erase_phantoms('import_cost')
 		self.phantom_set.update(phantoms)
@@ -74,8 +81,7 @@ class WriteOutputCommand(sublime_plugin.TextCommand):
 		a = self.view.text_point(line, 0)
 		return sublime.Region(a - 1)
 
-		# add blank region to right of import
-
+		# add blank region to right of import self.view.insert(edit, point, string)
 
 
 class ImportCostCommand(sublime_plugin.TextCommand):
@@ -94,17 +100,18 @@ class EventEditor(sublime_plugin.EventListener):
 			view.run_command('import_cost')
 
 	def on_modified(self, view):
-		file_extension = os.path.splitext(view.file_name())[1]
-		if file_extension in ['.js', '.jsx']:
-			self.pending = self.pending + 1
-			sublime.set_timeout(functools.partial(self.handle_timeout, view), 1500)
+		if view.file_name():
+			file_extension = os.path.splitext(view.file_name())[1]
+			if file_extension in ['.js', '.jsx']:
+				self.pending = self.pending + 1
+				sublime.set_timeout(functools.partial(self.handle_timeout, view), 1500)
 
 	def on_new_async(self, view):
 		npm_install(view, DIR_PATH) # sublime message when complete
 
 	def on_deactivated(self, view):
-		view.erase_phantoms('import_cost')
-		# NODE_SOCKET.terminate_proc()
+		# view.erase_phantoms('import_cost')
+		NODE_SOCKET.terminate_proc()
 
 		# view.run_command('import_cost')
 
@@ -125,3 +132,10 @@ class EventEditor(sublime_plugin.EventListener):
 
 # [forkpty: Resource temporarily unavailable]
 # [Could not create a new process and open a pseudo-tty.]
+
+# worker 646 appears stuck while processing file /Users/bmck/Documents/projects/ri-web-ui-library/node_modules/diff/dist/diff.js, killing process
+# indexing: crawler exited while processing /Users/bmck/Documents/projects/ri-web-ui-library/node_modules/diff/dist/diff.js, no symbols recorded
+
+# NameError: name 'NodeSocket' is not defined
+
+# indexing [job 16]: no files were indexed out of the 1 queued, abandoning crawl
