@@ -4,6 +4,7 @@ from .utils import node_socket, npm_install
 
 DIR_PATH = os.path.dirname(os.path.realpath(__file__))
 NODE_SOCKET = None 
+NODE_OUTPUT_CACHE = None
 
 
 def plugin_loaded():
@@ -47,6 +48,8 @@ class ImportCostExec(threading.Thread):
 		proc.stdin.write(json_data)
 		node_output = proc.stdout.readline()[:-1]
 		if node_output:
+			global NODE_OUTPUT_CACHE
+			NODE_OUTPUT_CACHE = node_output
 			self.view.run_command('write_output', {'output': node_output})
 
 
@@ -57,11 +60,12 @@ class WriteOutputCommand(sublime_plugin.TextCommand):
 		self.phantom_set = sublime.PhantomSet(view, 'import_cost')
 
 	def run(self, edit, output):
+		if output is None: return None
 		region = sublime.Region(0, self.view.size())
-		print(json.loads(output))
+		# print(json.loads(output))
 
-		for x in json.loads(output):
-			print(x['html'])
+		# for x in json.loads(output):
+		# 	print(x['html'])
 		
 		phantoms = [
 			sublime.Phantom(self.get_region(x['line']), x['html'], sublime.LAYOUT_INLINE)
@@ -69,13 +73,11 @@ class WriteOutputCommand(sublime_plugin.TextCommand):
 		]
 
 		print(phantoms)
+		print(self.phantom_set)
 		self.view.erase_phantoms('import_cost')
 		self.phantom_set.update(phantoms)
 		
-
-		self.view.erase_phantoms("test")
-		# region = self.get_region(3)
-		# self.view.add_phantom("test", region, '<span style="color: #FF0000; padding-left: 15px;">Hello world</span>', sublime.LAYOUT_INLINE)
+		# self.view.erase_phantoms("test")
 
 	def get_region(self, line):
 		a = self.view.text_point(line, 0)
@@ -103,8 +105,9 @@ class EventEditor(sublime_plugin.EventListener):
 		if view.file_name():
 			file_extension = os.path.splitext(view.file_name())[1]
 			if file_extension in ['.js', '.jsx']:
+				view.run_command('write_output', {'output': NODE_OUTPUT_CACHE})
 				self.pending = self.pending + 1
-				sublime.set_timeout(functools.partial(self.handle_timeout, view), 1500)
+				sublime.set_timeout(functools.partial(self.handle_timeout, view), 1000)
 
 	def on_new_async(self, view):
 		npm_install(view, DIR_PATH) # sublime message when complete
