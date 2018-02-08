@@ -21,6 +21,8 @@ const verifyImportChange = _.compose(
 	)
 );
 
+ // break into seperate files
+
 const parseHtml = _.curry(function(config, data) {
 	const parseKb = v => {
 		return (

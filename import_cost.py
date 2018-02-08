@@ -3,7 +3,8 @@ import threading, subprocess, json, os, functools
 from .utils import node_socket, npm_install
 
 DIR_PATH = os.path.dirname(os.path.realpath(__file__))
-NODE_SOCKET = None 
+FILE_EXTENSIONS = ['.js', '.jsx']
+NODE_SOCKET = None
 NODE_OUTPUT_CACHE = None
 
 
@@ -13,24 +14,30 @@ def plugin_loaded():
 
 
 class NodeSocket():
-
 	def __init__(self):
-		self.proc = self.open_node_socket()
+		self._p = self.open_node_socket()
+
+	@property
+	def p(self):
+		if self._p.poll() is not None:
+			self._p = self.open_node_socket()
+		return self._p
 
 	def open_node_socket(self):
 		try:
 			node_path = os.path.join(sublime.packages_path(), DIR_PATH, 'import-cost.js')
 			return node_socket(node_path)
 		except Exception as error:
-			sublime.error_message('import-cost\n%s' % error)
+			# sublime.error_message('import-cost\n%s' % error)
+			sublime.active_window().status_message('import-cost\n%s' % error)
 
-	def get_proc(self):
-		if self.proc.poll() is not None:
-			self.proc = self.open_node_socket()
-		return self.proc
+	# def get_process(self):
+	# 	if self.p.poll() is not None:
+	# 		self.p = self.open_node_socket()
+	# 	return self.p
 
-	def terminate_proc(self):
-		self.proc.terminate()
+	def terminate_process(self):
+		self._p.terminate()
 
 
 class ImportCostExec(threading.Thread):
@@ -44,13 +51,14 @@ class ImportCostExec(threading.Thread):
 		file_string = self.view.substr(region)
 		file_path = self.view.file_name()
 		json_data = json.dumps({'file_string': file_string, 'file_path': file_path}) + '\n'
-		proc = NODE_SOCKET.get_proc()
-		proc.stdin.write(json_data)
-		node_output = proc.stdout.readline()[:-1]
+
+		NODE_SOCKET.p.stdin.write(json_data)
+		node_output = NODE_SOCKET.p.stdout.readline()[:-1]
+		
 		if node_output:
 			global NODE_OUTPUT_CACHE
-			NODE_OUTPUT_CACHE = node_output
-			self.view.run_command('write_output', {'output': node_output})
+			NODE_OUTPUT_CACHE = json.loads(node_output)
+			self.view.run_command('write_output', {'output': NODE_OUTPUT_CACHE})
 
 
 class WriteOutputCommand(sublime_plugin.TextCommand):
@@ -61,19 +69,20 @@ class WriteOutputCommand(sublime_plugin.TextCommand):
 
 	def run(self, edit, output):
 		if output is None: return None
-		region = sublime.Region(0, self.view.size())
-		# print(json.loads(output))
 
 		# for x in json.loads(output):
 		# 	print(x['html'])
+
+		# short circuit if not change to region
+		# only if change on line containing phantom - cache line in list
 		
 		phantoms = [
 			sublime.Phantom(self.get_region(x['line']), x['html'], sublime.LAYOUT_INLINE)
-			for x in json.loads(output)
+			for x in output
 		]
 
 		print(phantoms)
-		print(self.phantom_set)
+
 		self.view.erase_phantoms('import_cost')
 		self.phantom_set.update(phantoms)
 		
@@ -94,7 +103,8 @@ class ImportCostCommand(sublime_plugin.TextCommand):
 		
 class EventEditor(sublime_plugin.EventListener):
 
-	pending = 0
+	def __init__(self):
+		self.pending = 0
 
 	def handle_timeout(self, view):
 		self.pending = self.pending - 1
@@ -104,21 +114,45 @@ class EventEditor(sublime_plugin.EventListener):
 	def on_modified(self, view):
 		if view.file_name():
 			file_extension = os.path.splitext(view.file_name())[1]
-			if file_extension in ['.js', '.jsx']:
-				view.run_command('write_output', {'output': NODE_OUTPUT_CACHE})
+			if file_extension in FILE_EXTENSIONS:
+				
+				# sel1 = view.sel()[0]
+				# character = view.substr(sel1.a - 1)
+				# print(character)
+				# print((character == ';') or character == ')')
+
+				# line, col = view.rowcol(view.sel()[0].begin())
+				# point = view.text_point(line, 0)
+				# print(view.substr(sublime.Region(point - 1, 1)))
+				
+				# global NODE_OUTPUT_CACHE
+				# line, col = view.rowcol(view.sel()[0].begin())
+
+				# if line + 1 in [x['line'] for x in NODE_OUTPUT_CACHE]:
+				# 	NODE_OUTPUT_CACHE[:] = [x for x in NODE_OUTPUT_CACHE if x.get('line') != line + 1]
+				# 	print(NODE_OUTPUT_CACHE)
+				# 	view.run_command('write_output', {'output': NODE_OUTPUT_CACHE})
+
+				# break into function and Memoize - check to see if charecter was semi colon
+				# return tuple: boolean and updated output
+				# if added charecter is semicolon and line in NODE_OUTPUT_CACHE
+
 				self.pending = self.pending + 1
 				sublime.set_timeout(functools.partial(self.handle_timeout, view), 1000)
 
 	def on_new_async(self, view):
-		npm_install(view, DIR_PATH) # sublime message when complete
+		npm_install(DIR_PATH) # status_message(string) view.set_status - add error handling
+
+	def on_activated(self, view):
+		view.run_command('import_cost')
 
 	def on_deactivated(self, view):
-		# view.erase_phantoms('import_cost')
-		NODE_SOCKET.terminate_proc()
+		view.erase_phantoms('import_cost')
+		NODE_SOCKET.terminate_process()
 
 		# view.run_command('import_cost')
 
-	# on switch view remove phantom set
+	# on switch view remove phantom sets
 
 
 # ImportCostCommand(sublime_plugin.TextCommand) --> view.run_command(import_cost)system

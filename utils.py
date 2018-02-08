@@ -36,8 +36,8 @@ def npm_install(view, path):
 	if not 'node_modules' in [d for d in os.listdir(path) if os.path.isdir(os.path.join(path, d))]:
 		try:
 			command = ["npm", "install"]
-			process = subprocess.Popen(command, stdout=subprocess.PIPE)
-			process.communicate()
+			p = subprocess.Popen(command, stdout=subprocess.PIPE)
+			p.communicate()
 			# out, err = process.communicate()
 		except OSError:
 			raise Exception('Couldn\'t find Npm. Make sure it\'s in your $PATH by running `npm -v` in your command-line.')

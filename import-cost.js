@@ -20,9 +20,9 @@ function importChangeStream(data) {
 function continueStream(data) {
 	return Rx.Observable.of(data)
 		.pluck(1)
-		.switchMap(importCostStream) // use switchMap
+		.switchMap(importCostStream)
 		.do(_ => cleanup())
-		.map(parsePackagesData)
+		.map(parsePackagesData) // memoize
 		.map(JSON.stringify)
 		.map(v => v + '\n')
 }
@@ -35,3 +35,4 @@ function importCostStream(data) {
 }
 
 // /Users/bmck/Library/Application Support/Sublime Text 3/Packages/import-cost-sublime
+// rename import-cost-socket
