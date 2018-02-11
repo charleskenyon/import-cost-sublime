@@ -1,6 +1,4 @@
-import os
-import platform
-import subprocess
+import os, platform, subprocess
 
 IS_MACOS = platform.system() == 'Darwin'
 IS_WINDOWS = platform.system() == 'Windows'
@@ -20,24 +18,3 @@ def node_socket(bin, args=[]):
 	except OSError:
 			raise Exception('Couldn\'t find Node.js. Make sure it\'s in your $PATH by running `node -v` in your command-line.')
 	return p
-			
-	# stdout, stderr = p.communicate(input=data.encode('utf-8'))
-	# stdout = stdout.decode('utf-8')
-	# stderr = stderr.decode('utf-8')
-	# if stderr:
-	# 		raise Exception('Error: %s' % stderr)
-	# else:
-	# 		return stdout
-
-	# return p rather than output - try and open socket once and stream data
-	# python ValueError: Cannot send input after starting communication
-
-def npm_install(view, path):
-	if not 'node_modules' in [d for d in os.listdir(path) if os.path.isdir(os.path.join(path, d))]:
-		try:
-			command = ["npm", "install"]
-			p = subprocess.Popen(command, stdout=subprocess.PIPE)
-			p.communicate()
-			# out, err = process.communicate()
-		except OSError:
-			raise Exception('Couldn\'t find Npm. Make sure it\'s in your $PATH by running `npm -v` in your command-line.')

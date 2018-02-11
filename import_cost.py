@@ -5,15 +5,20 @@ from .utils import node_socket, npm_install
 DIR_PATH = os.path.dirname(os.path.realpath(__file__))
 FILE_EXTENSIONS = ['.js', '.jsx']
 NODE_SOCKET = None
-NODE_OUTPUT_CACHE = None
+NODE_OUTPUT_CACHE = []
 
 
 def plugin_loaded():
 	global NODE_SOCKET
 	NODE_SOCKET = NodeSocket()
 
+	if not 'node_modules' in os.listdir(DIR_PATH):
+		args = {"cmd": ["npm", "install"], "working_dir": DIR_PATH}
+		sublime.active_window().run_command("exec", args)
+
 
 class NodeSocket():
+
 	def __init__(self):
 		self._p = self.open_node_socket()
 
@@ -28,16 +33,14 @@ class NodeSocket():
 			node_path = os.path.join(sublime.packages_path(), DIR_PATH, 'import-cost.js')
 			return node_socket(node_path)
 		except Exception as error:
-			# sublime.error_message('import-cost\n%s' % error)
 			sublime.active_window().status_message('import-cost\n%s' % error)
 
-	# def get_process(self):
-	# 	if self.p.poll() is not None:
-	# 		self.p = self.open_node_socket()
-	# 	return self.p
+	def pipe(self, node_input):
+		self.p.stdin.write(node_input)
+		return self.p.stdout.readline()[:-1]
 
 	def terminate_process(self):
-		self._p.terminate()
+		self.p.terminate()
 
 
 class ImportCostExec(threading.Thread):
@@ -51,9 +54,9 @@ class ImportCostExec(threading.Thread):
 		file_string = self.view.substr(region)
 		file_path = self.view.file_name()
 		json_data = json.dumps({'file_string': file_string, 'file_path': file_path}) + '\n'
-
-		NODE_SOCKET.p.stdin.write(json_data)
-		node_output = NODE_SOCKET.p.stdout.readline()[:-1]
+		print(json_data)
+		node_output = NODE_SOCKET.pipe(json_data)
+		print(node_output)
 		
 		if node_output:
 			global NODE_OUTPUT_CACHE
@@ -116,32 +119,17 @@ class EventEditor(sublime_plugin.EventListener):
 			file_extension = os.path.splitext(view.file_name())[1]
 			if file_extension in FILE_EXTENSIONS:
 				
-				# sel1 = view.sel()[0]
-				# character = view.substr(sel1.a - 1)
-				# print(character)
-				# print((character == ';') or character == ')')
-
-				# line, col = view.rowcol(view.sel()[0].begin())
-				# point = view.text_point(line, 0)
-				# print(view.substr(sublime.Region(point - 1, 1)))
-				
 				# global NODE_OUTPUT_CACHE
-				# line, col = view.rowcol(view.sel()[0].begin())
-
-				# if line + 1 in [x['line'] for x in NODE_OUTPUT_CACHE]:
-				# 	NODE_OUTPUT_CACHE[:] = [x for x in NODE_OUTPUT_CACHE if x.get('line') != line + 1]
-				# 	print(NODE_OUTPUT_CACHE)
+				# line = view.rowcol(view.sel()[0].begin())[0] + 1
+				# if line in [x['line'] for x in NODE_OUTPUT_CACHE]:
+				# 	NODE_OUTPUT_CACHE[:] = [x for x in NODE_OUTPUT_CACHE if x.get('line') != line]
 				# 	view.run_command('write_output', {'output': NODE_OUTPUT_CACHE})
-
-				# break into function and Memoize - check to see if charecter was semi colon
-				# return tuple: boolean and updated output
-				# if added charecter is semicolon and line in NODE_OUTPUT_CACHE
+				
+				# character = view.substr(point - 1)
+				# view.command_history(0)[0]
 
 				self.pending = self.pending + 1
 				sublime.set_timeout(functools.partial(self.handle_timeout, view), 1000)
-
-	def on_new_async(self, view):
-		npm_install(DIR_PATH) # status_message(string) view.set_status - add error handling
 
 	def on_activated(self, view):
 		view.run_command('import_cost')
@@ -150,7 +138,8 @@ class EventEditor(sublime_plugin.EventListener):
 		view.erase_phantoms('import_cost')
 		NODE_SOCKET.terminate_process()
 
-		# view.run_command('import_cost')
+	def on_close(self, view):
+		NODE_SOCKET.terminate_process()
 
 	# on switch view remove phantom sets
 
@@ -176,3 +165,23 @@ class EventEditor(sublime_plugin.EventListener):
 # NameError: name 'NodeSocket' is not defined
 
 # indexing [job 16]: no files were indexed out of the 1 queued, abandoning crawl
+
+# def parse_file_string(self, file_string):
+# 	return '\n'.join([
+# 		x + ('//' + str(i)) 
+# 		for i, x in enumerate(file_string.split('\n')) 
+# 		if re.search(r'\bimport\s|\brequire\(', x)
+# 	])
+
+# def parse_file_string(self, file_string):
+# 		temp_list = []
+# 		for i, x in enumerate(file_string.split('\n')):
+# 			if re.search(r'\bimport\s|\brequire\(', x):
+# 				temp_list.append(x.replace(';', '') + ('//' + str(i)))
+# 			else:
+# 				temp_list.append('')
+# 		return '\n'.join(temp_list)
+
+# @functools.lru_cache(maxsize=None)
+# NODE_SOCKET.pipe.cache_clear()
+# NODE_SOCKET.pipe.cache_info()

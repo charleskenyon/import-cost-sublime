@@ -21,15 +21,13 @@ const verifyImportChange = _.compose(
 	)
 );
 
- // break into seperate files
+const parseKb = _.curry(function(toDecimalPlace, v) {
+	return (
+		config.toDecimalPlace ? (v / 1000).toFixed(1) : Math.round(v / 1000)
+	) + 'kB';
+});
 
-const parseHtml = _.curry(function(config, data) {
-	const parseKb = v => {
-		return (
-			config.toDecimalPlace ? (v / 1000).toFixed(1) : Math.round(v / 1000)
-		) + 'kB';
-	}
-
+const parseHtml = _.curry(function(config, parseKb, data) {
 	let text = parseKb(data.size);
 	if (config.showGzip) text += `, gzip ${parseKb(data.gzip)}`;
 	const styles = `style="color: ${config.textColour}; padding-left: 15px;"`;
@@ -41,7 +39,7 @@ const parseHtml = _.curry(function(config, data) {
 });
 
 const parsePackagesData = _.compose(
-	_.map(parseHtml(config)),
+	_.map(parseHtml(config, parseKb(config.toDecimalPlace))),
 	_.filter(v => v.size !== 0)
 );
 
