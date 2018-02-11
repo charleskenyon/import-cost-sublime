@@ -24,4 +24,4 @@ ASCII is a charecter encoding maps the numbers 0-127 to characters. Unicode is a
 
 Utf-8 is an encoding that is used to transform an idea (e.g the letter A is ASCII character encoding) into raw data.
 
-A socket is one endpoint of a two way communication link between two programs running on a network (the same or different machines).
+A socket is one endpoint of a two way communication link between two programs running on a network (the same or on different machines).

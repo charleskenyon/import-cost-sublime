@@ -1,6 +1,7 @@
 const Rx = require('rxjs/Rx');
 const { importCost, cleanup, JAVASCRIPT } = require('import-cost');
-const { verifyImportChange, parsePackagesData } = require('./utils');
+const verifyImportChange = require('./verify-import-change');
+const formatPayload = require('./format-payload');
 
 Rx.Observable.fromEvent(process.stdin, 'readable', () => process.stdin.read())
 	.map(v => v.toString('ascii'))
@@ -22,7 +23,7 @@ function continueStream(data) {
 		.pluck(1)
 		.switchMap(importCostStream)
 		.do(_ => cleanup())
-		.map(parsePackagesData) // memoize
+		.map(formatPayload) // memoize
 		.map(JSON.stringify)
 		.map(v => v + '\n')
 }

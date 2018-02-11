@@ -30,7 +30,7 @@ class NodeSocket():
 
 	def open_node_socket(self):
 		try:
-			node_path = os.path.join(sublime.packages_path(), DIR_PATH, 'import-cost.js')
+			node_path = os.path.join(sublime.packages_path(), DIR_PATH, 'node-socket.js')
 			return node_socket(node_path)
 		except Exception as error:
 			sublime.active_window().status_message('import-cost\n%s' % error)
