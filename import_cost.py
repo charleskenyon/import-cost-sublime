@@ -54,9 +54,7 @@ class ImportCostExec(threading.Thread):
 		file_string = self.view.substr(region)
 		file_path = self.view.file_name()
 		json_data = json.dumps({'file_string': file_string, 'file_path': file_path}) + '\n'
-		print(json_data)
 		node_output = NODE_SOCKET.pipe(json_data)
-		print(node_output)
 		
 		if node_output:
 			global NODE_OUTPUT_CACHE
@@ -72,30 +70,18 @@ class WriteOutputCommand(sublime_plugin.TextCommand):
 
 	def run(self, edit, output):
 		if output is None: return None
-
-		# for x in json.loads(output):
-		# 	print(x['html'])
-
-		# short circuit if not change to region
-		# only if change on line containing phantom - cache line in list
 		
 		phantoms = [
 			sublime.Phantom(self.get_region(x['line']), x['html'], sublime.LAYOUT_INLINE)
 			for x in output
 		]
 
-		print(phantoms)
-
 		self.view.erase_phantoms('import_cost')
 		self.phantom_set.update(phantoms)
-		
-		# self.view.erase_phantoms("test")
 
 	def get_region(self, line):
 		a = self.view.text_point(line, 0)
 		return sublime.Region(a - 1)
-
-		# add blank region to right of import self.view.insert(edit, point, string)
 
 
 class ImportCostCommand(sublime_plugin.TextCommand):
@@ -119,14 +105,11 @@ class EventEditor(sublime_plugin.EventListener):
 			file_extension = os.path.splitext(view.file_name())[1]
 			if file_extension in FILE_EXTENSIONS:
 				
-				# global NODE_OUTPUT_CACHE
-				# line = view.rowcol(view.sel()[0].begin())[0] + 1
-				# if line in [x['line'] for x in NODE_OUTPUT_CACHE]:
-				# 	NODE_OUTPUT_CACHE[:] = [x for x in NODE_OUTPUT_CACHE if x.get('line') != line]
-				# 	view.run_command('write_output', {'output': NODE_OUTPUT_CACHE})
-				
-				# character = view.substr(point - 1)
-				# view.command_history(0)[0]
+				global NODE_OUTPUT_CACHE # remove phantom if line is being edited
+				line = view.rowcol(view.sel()[0].begin())[0] + 1
+				if line in [x['line'] for x in NODE_OUTPUT_CACHE]:
+					NODE_OUTPUT_CACHE[:] = [x for x in NODE_OUTPUT_CACHE if x.get('line') != line]
+					view.run_command('write_output', {'output': NODE_OUTPUT_CACHE})
 
 				self.pending = self.pending + 1
 				sublime.set_timeout(functools.partial(self.handle_timeout, view), 1000)
@@ -140,48 +123,3 @@ class EventEditor(sublime_plugin.EventListener):
 
 	def on_close(self, view):
 		NODE_SOCKET.terminate_process()
-
-	# on switch view remove phantom sets
-
-
-# ImportCostCommand(sublime_plugin.TextCommand) --> view.run_command(import_cost)system
-
-# file_path = view.file_name()
-
-# eslint_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'node_modules', 'eslint', 'bin', 'eslint.js')
-
-# sublime.Phantom to show data
-
-# http://horsed.github.io/articles/sublime-build-system-for-npm-install/
-
-# installing npm modules... /-------/ node/npm not installed - please install node to use this plugin
-
-# [forkpty: Resource temporarily unavailable]
-# [Could not create a new process and open a pseudo-tty.]
-
-# worker 646 appears stuck while processing file /Users/bmck/Documents/projects/ri-web-ui-library/node_modules/diff/dist/diff.js, killing process
-# indexing: crawler exited while processing /Users/bmck/Documents/projects/ri-web-ui-library/node_modules/diff/dist/diff.js, no symbols recorded
-
-# NameError: name 'NodeSocket' is not defined
-
-# indexing [job 16]: no files were indexed out of the 1 queued, abandoning crawl
-
-# def parse_file_string(self, file_string):
-# 	return '\n'.join([
-# 		x + ('//' + str(i)) 
-# 		for i, x in enumerate(file_string.split('\n')) 
-# 		if re.search(r'\bimport\s|\brequire\(', x)
-# 	])
-
-# def parse_file_string(self, file_string):
-# 		temp_list = []
-# 		for i, x in enumerate(file_string.split('\n')):
-# 			if re.search(r'\bimport\s|\brequire\(', x):
-# 				temp_list.append(x.replace(';', '') + ('//' + str(i)))
-# 			else:
-# 				temp_list.append('')
-# 		return '\n'.join(temp_list)
-
-# @functools.lru_cache(maxsize=None)
-# NODE_SOCKET.pipe.cache_clear()
-# NODE_SOCKET.pipe.cache_info()

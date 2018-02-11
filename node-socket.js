@@ -34,6 +34,3 @@ function importCostStream(data) {
 			.on('error', err => {})
 	, 'done');
 }
-
-// /Users/bmck/Library/Application Support/Sublime Text 3/Packages/import-cost-sublime
-// rename import-cost-socket or node-socket.js
