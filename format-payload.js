@@ -8,7 +8,7 @@ const convertKb = _.curry(function(toDecimalPlace, v) {
 })(config.toDecimalPlace);
 
 const formatHtml = _.curry(function(config, data) {
-	const text = `${data.size}${config.showGzip ? `, ${data.gzip}` : ''}`;
+	const text = `${data.size}${config.showGzip ? `, gzip ${data.gzip}` : ''}`;
 	const style = `style="color: ${config.textColour}; padding-left: 15px;"`;
 	const html = `<span ${style}>${text}</span>`;
 	return { html, line: data.line };
