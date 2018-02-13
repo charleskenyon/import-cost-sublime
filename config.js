@@ -4,6 +4,6 @@ module.exports = {
 
 	toDecimalPlace: true,
 
-	textColour: '#C0C0C0'
+	textColour: '#BCBCBC'
 	
 }

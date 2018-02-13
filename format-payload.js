@@ -24,4 +24,4 @@ const formatPayload = _.compose(
 	_.filter(v => v.size !== 0)
 );
 
-module.exports = formatPayload;
+module.exports = _.memoize(formatPayload);

@@ -4,6 +4,7 @@ const verifyImportChange = require('./verify-import-change');
 const formatPayload = require('./format-payload');
 
 Rx.Observable.fromEvent(process.stdin, 'readable', () => process.stdin.read())
+	.debounce(() => Rx.Observable.timer(1000))
 	.map(v => v.toString('ascii'))
 	.map(JSON.parse)
 	.startWith(null)
@@ -23,7 +24,7 @@ function continueStream(data) {
 		.pluck(1)
 		.switchMap(importCostStream)
 		.do(_ => cleanup())
-		.map(formatPayload) // memoize
+		.map(formatPayload)
 		.map(JSON.stringify)
 		.map(v => v + '\n')
 }

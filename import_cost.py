@@ -35,9 +35,13 @@ class NodeSocket():
 		except Exception as error:
 			sublime.active_window().status_message('import-cost\n%s' % error)
 
+	@functools.lru_cache(maxsize=64)
 	def pipe(self, node_input):
-		self.p.stdin.write(node_input)
-		return self.p.stdout.readline()[:-1]
+		try:
+			self.p.stdin.write(node_input)
+			return self.p.stdout.readline()[:-1]
+		except BrokenPipeError:
+			return None
 
 	def terminate_process(self):
 		self.p.terminate()
@@ -69,13 +73,10 @@ class WriteOutputCommand(sublime_plugin.TextCommand):
 		self.phantom_set = sublime.PhantomSet(view, 'import_cost')
 
 	def run(self, edit, output):
-		if output is None: return None
-		
 		phantoms = [
 			sublime.Phantom(self.get_region(x['line']), x['html'], sublime.LAYOUT_INLINE)
 			for x in output
 		]
-
 		self.view.erase_phantoms('import_cost')
 		self.phantom_set.update(phantoms)
 
@@ -92,14 +93,6 @@ class ImportCostCommand(sublime_plugin.TextCommand):
 		
 class EventEditor(sublime_plugin.EventListener):
 
-	def __init__(self):
-		self.pending = 0
-
-	def handle_timeout(self, view):
-		self.pending = self.pending - 1
-		if self.pending == 0:
-			view.run_command('import_cost')
-
 	def on_modified(self, view):
 		if view.file_name():
 			file_extension = os.path.splitext(view.file_name())[1]
@@ -111,8 +104,7 @@ class EventEditor(sublime_plugin.EventListener):
 					NODE_OUTPUT_CACHE[:] = [x for x in NODE_OUTPUT_CACHE if x.get('line') != line]
 					view.run_command('write_output', {'output': NODE_OUTPUT_CACHE})
 
-				self.pending = self.pending + 1
-				sublime.set_timeout(functools.partial(self.handle_timeout, view), 1000)
+				view.run_command('import_cost')
 
 	def on_activated(self, view):
 		view.run_command('import_cost')
