@@ -35,7 +35,7 @@ class NodeSocket():
 		except Exception as error:
 			sublime.active_window().status_message('import-cost\n%s' % error)
 
-	@functools.lru_cache(maxsize=64)
+	@functools.lru_cache(maxsize=32)
 	def pipe(self, node_input):
 		try:
 			self.p.stdin.write(node_input)
@@ -93,6 +93,14 @@ class ImportCostCommand(sublime_plugin.TextCommand):
 		
 class EventEditor(sublime_plugin.EventListener):
 
+	def __init__(self):
+		self.pending = 0
+
+	def handle_timeout(self, view):
+		self.pending = self.pending - 1
+		if self.pending == 0:
+			view.run_command('import_cost')
+
 	def on_modified(self, view):
 		if view.file_name():
 			file_extension = os.path.splitext(view.file_name())[1]
@@ -104,14 +112,16 @@ class EventEditor(sublime_plugin.EventListener):
 					NODE_OUTPUT_CACHE[:] = [x for x in NODE_OUTPUT_CACHE if x.get('line') != line]
 					view.run_command('write_output', {'output': NODE_OUTPUT_CACHE})
 
-				view.run_command('import_cost')
+				self.pending = self.pending + 1
+				sublime.set_timeout(functools.partial(self.handle_timeout, view), 1000)
 
 	def on_activated(self, view):
 		view.run_command('import_cost')
 
 	def on_deactivated(self, view):
-		view.erase_phantoms('import_cost')
 		NODE_SOCKET.terminate_process()
+		NODE_SOCKET.pipe.cache_clear()
 
 	def on_close(self, view):
+		view.erase_phantoms('import_cost')
 		NODE_SOCKET.terminate_process()
