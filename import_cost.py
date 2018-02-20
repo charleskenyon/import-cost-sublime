@@ -1,6 +1,6 @@
 import sublime, sublime_plugin
 import threading, subprocess, json, os, functools
-from .utils import node_socket, npm_install
+from .utils import node_socket
 
 DIR_PATH = os.path.dirname(os.path.realpath(__file__))
 FILE_EXTENSIONS = ['.js', '.jsx']
