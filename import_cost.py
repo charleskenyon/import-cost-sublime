@@ -1,5 +1,5 @@
 import sublime, sublime_plugin
-import threading, subprocess, json, os, functools
+import threading, json, os, functools
 from .utils import node_socket
 
 DIR_PATH = os.path.dirname(os.path.realpath(__file__))
@@ -24,7 +24,7 @@ class NodeSocket():
 
 	@property
 	def p(self):
-		if self._p.poll() is not None:
+		if (self._p is None) or (self._p.poll() is not None):
 			self._p = self.open_node_socket()
 		return self._p
 
