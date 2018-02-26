@@ -12,10 +12,6 @@ def plugin_loaded():
 	global NODE_SOCKET
 	NODE_SOCKET = NodeSocket()
 
-	if not 'node_modules' in os.listdir(DIR_PATH):
-		args = {"cmd": ["npm", "install"], "working_dir": DIR_PATH}
-		sublime.active_window().run_command("exec", args)
-
 
 class NodeSocket():
 
